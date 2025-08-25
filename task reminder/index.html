@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Auth overlay styles */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .auth-container {
+            background: white;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .auth-overlay.active .auth-container {
+            transform: translateY(0);
+        }
+        
+        .auth-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .auth-body {
+            padding: 1.5rem;
+        }
+        
+        .auth-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 1.5rem;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .auth-tab.active {
+            color: #4361ee;
+            border-bottom-color: #4361ee;
+            font-weight: 500;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Hide main content when not authenticated */
+        .app-content {
+            display: none;
+        }
+        
+        .app-content.authenticated {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Overlay -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h5 class="mb-0">Welcome to Expense Tracker</h5>
+                <button type="button" class="btn-close" id="closeAuth"></button>
+            </div>
+            
+            <div class="auth-tabs mb-0">
+                <div class="auth-tab active" data-tab="login">Sign In</div>
+                <div class="auth-tab" data-tab="register">Sign Up</div>
+            </div>
+            
+            <div class="auth-body">
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form active">
+                    <div class="mb-3">
+                        <label for="loginEmail" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="loginEmail" placeholder="name@example.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="loginPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
+                            <button class="btn btn-outline-secondary toggle-password" type="button">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" class="text-decoration-none" id="forgotPassword">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                        Sign In
+                    </button>
+                    <div class="divider">
+                        <span>or continue with</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-secondary">
+                            <i class="bi bi-google me-2"></i> Sign in with Google
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Registration Form -->
+                <form id="registerForm" class="auth-form">
+                    <div class="mb-3">
+                        <label for="registerName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="registerName" placeholder="John Doe" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="registerEmail" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="registerEmail" placeholder="name@example.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="registerPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="registerPassword" placeholder="••••••••" required>
+                            <button class="btn btn-outline-secondary toggle-password" type="button">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Must be at least 8 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="confirmPassword" placeholder="••••••••" required>
+                            <button class="btn btn-outline-secondary toggle-password" type="button">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="terms" required>
+                        <label class="form-check-label" for="terms">
+                            I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                        Create Account
+                    </button>
+                </form>
+            </div>
+            
+            <div class="auth-footer">
+                <p class="mb-0">
+                    <span class="d-none" id="switchToLogin">Already have an account? <a href="#" class="text-primary">Sign in</a></span>
+                    <span id="switchToRegister">Don't have an account? <a href="#" class="text-primary">Sign up</a></span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main App Content -->
+    <div class="app-content" id="appContent">
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="bi bi-wallet2"></i>
+                <span>ExpensePro</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-section="dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li data-section="transactions">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Transactions</span>
+                </li>
+                <li data-section="reports">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Reports</span>
+                </li>
+                <li data-section="categories">
+                    <i class="bi bi-tags"></i>
+                    <span>Categories</span>
+                </li>
+                <li data-section="settings">
+                    <i class="bi bi-gear"></i>
+                    <span>Settings</span>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Search transactions...">
+                </div>
+                <div class="user-profile">
+                    <div class="notification">
+                        <i class="bi bi-bell"></i>
+                        <span class="badge">3</span>
+                    </div>
+                    <div class="profile dropdown">
+                        <button class="btn btn-link dropdown-toggle d-flex align-items-center p-0 border-0 bg-transparent" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="profile-avatar d-flex align-items-center justify-content-center" id="userAvatar">U</div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown" style="min-width: 200px;">
+                            <li class="px-3 py-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="profile-avatar me-2" id="dropdownUserAvatar">U</div>
+                                    <div>
+                                        <h6 class="mb-0" id="dropdownUserName">User Name</h6>
+                                        <small class="text-muted" id="dropdownUserEmail">user@example.com</small>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="section active">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h2>Dashboard</h2>
+                            <p class="text-muted">Welcome back! Here's your spending overview.</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-primary" id="addExpenseBtn">
+                                <i class="bi bi-plus-lg"></i> Add Expense
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card income">
+                                <div class="stat-icon">
+                                    <i class="bi bi-arrow-down-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h5>Income</h5>
+                                    <h3>$<span id="totalIncome">0</span></h3>
+                                    <span class="badge bg-success">+2.5% <i class="bi bi-arrow-up"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card expense">
+                                <div class="stat-icon">
+                                    <i class="bi bi-arrow-up-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h5>Expenses</h5>
+                                    <h3>$<span id="totalExpense">0</span></h3>
+                                    <span class="badge bg-danger">-1.2% <i class="bi bi-arrow-down"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card balance">
+                                <div class="stat-icon">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h5>Balance</h5>
+                                    <h3>$<span id="totalBalance">0</span></h3>
+                                    <span class="badge bg-primary">+1.3% <i class="bi bi-arrow-up"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card savings">
+                                <div class="stat-icon">
+                                    <i class="bi bi-piggy-bank"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h5>Savings</h5>
+                                    <h3>$<span id="savings">0</span></h3>
+                                    <span class="badge bg-success">+5.1% <i class="bi bi-arrow-up"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="card chart-card">
+                                <div class="card-header">
+                                    <h5>Expense Overview</h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="chartRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            This Month
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="chartRangeDropdown">
+                                            <li><a class="dropdown-item" href="#" data-range="week">This Week</a></li>
+                                            <li><a class="dropdown-item active" href="#" data-range="month">This Month</a></li>
+                                            <li><a class="dropdown-item" href="#" data-range="year">This Year</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="expenseChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card chart-card">
+                                <div class="card-header">
+                                    <h5>Spending by Category</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="categoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5>Recent Transactions</h5>
+                            <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Category</th>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentTransactions">
+                                        <!-- Transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Other sections will be loaded here -->
+                <section id="transactions" class="section">
+                    <!-- Transactions content will be loaded here -->
+                </section>
+                
+                <section id="reports" class="section">
+                    <!-- Reports content will be loaded here -->
+                </section>
+                
+                <section id="categories" class="section">
+                    <!-- Categories content will be loaded here -->
+                </section>
+                
+                <section id="settings" class="section">
+                    <!-- Settings content will be loaded here -->
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Add Expense Modal -->
+    <div class="modal fade" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="expenseModalLabel">Add New Transaction</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="expenseForm">
+                        <div class="mb-3">
+                            <label for="transactionType" class="form-label">Transaction Type</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="type" id="expenseRadio" autocomplete="off" value="expense" checked>
+                                <label class="btn btn-outline-danger" for="expenseRadio">
+                                    <i class="bi bi-arrow-up-circle"></i> Expense
+                                </label>
+                                <input type="radio" class="btn-check" name="type" id="incomeRadio" autocomplete="off" value="income">
+                                <label class="btn btn-outline-success" for="incomeRadio">
+                                    <i class="bi bi-arrow-down-circle"></i> Income
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="amount" placeholder="0.00" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="description" placeholder="e.g., Groceries, Salary, etc." required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" required>
+                                    <option value="" disabled selected>Select a category</option>
+                                    <option value="food">Food & Drinks</option>
+                                    <option value="shopping">Shopping</option>
+                                    <option value="transportation">Transportation</option>
+                                    <option value="bills">Bills & Utilities</option>
+                                    <option value="entertainment">Entertainment</option>
+                                    <option value="health">Health & Fitness</option>
+                                    <option value="education">Education</option>
+                                    <option value="salary">Salary</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="date" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="date" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" rows="2" placeholder="Add any additional notes..."></textarea>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Add Transaction</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth-fixed.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
